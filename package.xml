@@ -10,7 +10,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>libpcl-all-dev</build_depend>
-  <build_depend>pcl_ros</build_depend>
+  <build_depend>pcl_msgs</build_depend>
+  <build_depend>perception_pcl</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>laser_geometry</build_depend>
@@ -18,7 +19,8 @@
   <build_depend>libvtk-qt</build_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>libpcl-all-dev</exec_depend>
-  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>pcl_msgs</exec_depend>
+  <exec_depend>perception_pcl</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>tf</exec_depend>
   <exec_depend>laser_geometry</exec_depend>

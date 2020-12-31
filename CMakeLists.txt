@@ -110,6 +110,8 @@ set(LIBRARY_DIRS ${ament_cmake_LIBRARIES} ${pcl_ros_LIBRARIES}
   ${rclcpp_LIBRARIES} ${Eigen3_LIBRARIES} ${PCL_LIBRARIES}
   ${std_msgs_LIBRARIES})
 target_link_libraries(laserscan_multi_merger ${LIBRARY_DIRS})
+ament_target_dependencies(laserscan_multi_merger rclcpp laser_geometry tf2 tf2_ros tf2_sensor_msgs sensor_msgs)
+
 # target_link_libraries(laserscan_virtualizer ${LIBRARY_DIRS})
 set(LIBS ${ament_cmake_LIBRARIES} ${pcl_ros_LIBRARIES}
   ${laser_geometry_LIBRARIES} ${tf2_LIBRARIES} ${sensor_msgs_LIBRARIES}
@@ -139,12 +141,8 @@ set(LIBS ${ament_cmake_LIBRARIES} ${pcl_ros_LIBRARIES}
 
 ## Mark executables and/or libraries for installation
 install(TARGETS laserscan_multi_merger # laserscan_virtualizer
-  ARCHIVE
-  DESTINATION lib
-  LIBRARY
-  DESTINATION lib
-  RUNTIME
-  DESTINATION bin)
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
@@ -154,7 +152,7 @@ install(TARGETS laserscan_multi_merger # laserscan_virtualizer
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
+install(DIRECTORY launch/ DESTINATION share/${PROJECT_NAME}/launch)
 
 #############
 ## Testing ##
