@@ -114,10 +114,14 @@ void LaserscanMerger::laserscan_topic_parser()
       clouds_modified.resize(input_topics.size());
       clouds.resize(input_topics.size());
       RCLCPP_INFO(this->get_logger(),"Subscribing to topics\t%ld",scan_subscribers.size());
+
       for(int i=0; i<input_topics.size(); ++i)
       {
+        RCLCPP_INFO(this->get_logger(), "subscribing %s", input_topics[i].c_str());
         scan_subscribers[i] = this->create_subscription<sensor_msgs::msg::LaserScan>(
-            input_topics[i].c_str(), 1,
+            input_topics[i].c_str(),
+            // QoS setting compatible with all publishers
+            rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile(),
             // need explicit casting from std::Bind to specific typed std::function
             (std::function<void(const sensor_msgs::msg::LaserScan::ConstSharedPtr msg)>)
               std::bind(&LaserscanMerger::scanCallback, this, std::placeholders::_1, input_topics[i])
@@ -174,34 +178,45 @@ LaserscanMerger::LaserscanMerger()
 
 void LaserscanMerger::scanCallback(const sensor_msgs::msg::LaserScan::ConstSharedPtr scan, std::string topic)
 {
-  sensor_msgs::msg::PointCloud2 tmpCloud1,tmpCloud2;
-  // sensor_msgs::msg::PointCloud2 tmpCloud3;
+  // RCLCPP_INFO_THROTTLE(
+  //     this->get_logger(), *(this->get_clock()), 1000,
+  //     "received topic %s", topic.c_str()
+  // );
+
+  sensor_msgs::msg::PointCloud2 tmpCloud1;
 
   // Verify that TF knows how to transform from the received scan to the destination scan frame
   // No need to wait for transform with tf2
   // tfListener_.waitForTransform(scan->header.frame_id.c_str(), destination_frame.c_str(), scan->header.stamp, rclcpp::Duration(1));
 
-  projector_.transformLaserScanToPointCloud(scan->header.frame_id, *scan, tmpCloud1, *tfBuffer_, laser_geometry::channel_option::Distance);
-
-  geometry_msgs::msg::TransformStamped transform;
   try
   {
-    transform = tfBuffer_->lookupTransform(destination_frame, tmpCloud1.header.frame_id, rclcpp::Time(0));
+    projector_.transformLaserScanToPointCloud(destination_frame, *scan, tmpCloud1, *tfBuffer_);
   }
-  catch (tf2::TransformException &ex)
+  catch (tf2::LookupException &ex)
   {
-    RCLCPP_ERROR(this->get_logger(), "%s",ex.what());
+    RCLCPP_ERROR(
+        this->get_logger(),
+        "tf error in projector_.transformLaserScanToPointCloud\n%s",
+        ex.what()
+    );
     return;
   }
-
-  tf2::doTransform(tmpCloud1, tmpCloud2, transform);
+  catch (std::exception const &ex)
+  {
+    RCLCPP_ERROR(
+        this->get_logger(),
+        "error in projector_.transformLaserScanToPointCloud\n%s",
+        ex.what()
+    );
+    return;
+  }
 
   for(int i=0; i<input_topics.size(); ++i)
   {
     if(topic.compare(input_topics[i]) == 0)
     {
-      // sensor_msgs::convertPointCloudToPointCloud2(tmpCloud2,tmpCloud3);
-      pcl_conversions::toPCL(tmpCloud2, clouds[i]);
+      pcl_conversions::toPCL(tmpCloud1, clouds[i]);
       clouds_modified[i] = true;
     }
   }
@@ -224,8 +239,9 @@ void LaserscanMerger::scanCallback(const sensor_msgs::msg::LaserScan::ConstShare
       clouds_modified[i] = false;
     }
 
-    // TODO: make the point cloud topic publishable as well
-    // point_cloud_publisher_->publish(merged_cloud);
+    sensor_msgs::msg::PointCloud2 merged_cloud_ros;
+    pcl_conversions::fromPCL(merged_cloud, merged_cloud_ros);
+    point_cloud_publisher_->publish(merged_cloud_ros);
 
     Eigen::MatrixXf points;
     getPointCloudAsEigen(merged_cloud,points);
