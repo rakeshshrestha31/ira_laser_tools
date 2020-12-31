@@ -1,1 +1,7 @@
 *.user
+
+# vim swap files
+*.swp
+*.swo
+*.swn
+*.swm
